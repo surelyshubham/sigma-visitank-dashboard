@@ -2,24 +2,54 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Cable as Cube, FileText, Upload, TrendingUp, Settings, ChevronLeft } from "lucide-react"
+import {
+  LayoutDashboard,
+  Cable as Cube,
+  FileText,
+  Upload,
+  TrendingUp,
+  Settings,
+  ChevronLeft,
+  LogOut,
+} from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 interface SidebarProps {
   isOpen: boolean
   onToggle: () => void
 }
 
-const menuItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard Overview" },
-  { href: "/tank-viewer", icon: Cube, label: "Tank 3D Viewer" },
-  { href: "/inspection-reports", icon: FileText, label: "Inspection Reports" },
-  { href: "/excel-uploads", icon: Upload, label: "Excel Uploads" },
-  { href: "/historical-analysis", icon: TrendingUp, label: "Historical Analysis" },
-  { href: "/settings", icon: Settings, label: "Settings / Account" },
-]
+const getMenuItems = (role: "admin" | "staff" | "client") => {
+  const baseItems = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard Overview" },
+    { href: "/inspection-reports", icon: FileText, label: "Inspection Reports" },
+    { href: "/historical-analysis", icon: TrendingUp, label: "Historical Analysis" },
+  ]
+
+  const roleSpecificItems = {
+    admin: [
+      { href: "/tank-viewer", icon: Cube, label: "Tank 3D Viewer" },
+      { href: "/excel-uploads", icon: Upload, label: "Excel Uploads" },
+      { href: "/settings", icon: Settings, label: "Admin Settings" },
+    ],
+    staff: [
+      { href: "/tank-viewer", icon: Cube, label: "Tank 3D Viewer" },
+      { href: "/excel-uploads", icon: Upload, label: "Upload Data" },
+      { href: "/settings", icon: Settings, label: "My Account" },
+    ],
+    client: [{ href: "/settings", icon: Settings, label: "Account Settings" }],
+  }
+
+  return [...baseItems, ...roleSpecificItems[role]]
+}
 
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+
+  if (!user) return null
+
+  const menuItems = getMenuItems(user.role)
 
   return (
     <>
@@ -35,7 +65,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-sidebar-border">
-            <h2 className="text-lg font-bold text-sidebar-foreground">Sigma</h2>
+            <div>
+              <h2 className="text-lg font-bold text-sidebar-foreground">Sigma</h2>
+              <p className="text-xs text-sidebar-foreground/60 capitalize">{user.role}</p>
+            </div>
             <button onClick={onToggle} className="lg:hidden p-1 hover:bg-sidebar-accent rounded-lg transition">
               <ChevronLeft size={20} className="text-sidebar-foreground" />
             </button>
@@ -65,9 +98,22 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </div>
           </nav>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-sidebar-border">
-            <p className="text-xs text-sidebar-foreground/60">v1.0.0</p>
+          {/* Footer with logout */}
+          <div className="p-6 border-t border-sidebar-border space-y-4">
+            <div className="text-xs">
+              <p className="font-semibold text-sidebar-foreground">{user.name}</p>
+              <p className="text-sidebar-foreground/60">{user.email}</p>
+            </div>
+            <button
+              onClick={() => {
+                logout()
+                window.location.href = "/"
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent rounded-lg transition"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
           </div>
         </div>
       </aside>

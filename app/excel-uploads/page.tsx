@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
-import Link from "next/link"
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
 import { useState } from "react"
 import { Upload, File, Trash2, CheckCircle, AlertCircle } from "lucide-react"
 import * as XLSX from "xlsx"
+import { setInspectionData } from "@/lib/inspection-data"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface UploadedFile {
   id: string
@@ -19,6 +20,7 @@ interface UploadedFile {
   timestamp?: Date
   tankId?: string
   errorMessage?: string
+  productType?: "tank" | "pipe" | "elbow" | "vessel"
 }
 
 export default function ExcelUploadsPage() {
@@ -26,6 +28,7 @@ export default function ExcelUploadsPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [lastUploadedData, setLastUploadedData] = useState<UploadedFile | null>(null)
+  const [selectedProductType, setSelectedProductType] = useState<"tank" | "pipe" | "elbow" | "vessel">("tank")
 
   const handleFileSelect = async (files: FileList) => {
     const newFiles: UploadedFile[] = []
@@ -40,6 +43,7 @@ export default function ExcelUploadsPage() {
         status: "processing",
         size: formatFileSize(file.size),
         tankId: extractTankId(file.name),
+        productType: selectedProductType,
       }
 
       newFiles.push(newFile)
@@ -89,6 +93,21 @@ export default function ExcelUploadsPage() {
     setUploadedFiles(uploadedFiles.filter((f) => f.id !== fileId))
   }
 
+  const handleViewInViewer = (file: UploadedFile) => {
+    if (file.data && file.headers) {
+      setInspectionData({
+        id: file.id,
+        productType: selectedProductType,
+        fileName: file.name,
+        data: file.data,
+        headers: file.headers,
+        metadata: {
+          uploadDate: file.timestamp,
+        },
+      })
+    }
+  }
+
   const completedFiles = uploadedFiles.filter((f) => f.status === "completed" && f.data)
 
   return (
@@ -98,7 +117,23 @@ export default function ExcelUploadsPage() {
         <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto space-y-6">
-            <h1 className="text-3xl font-bold text-foreground">Excel Uploads & Data Preview</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-foreground">Excel Uploads & Data Preview</h1>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-foreground">Product Type:</label>
+                <Select value={selectedProductType} onValueChange={(val: any) => setSelectedProductType(val)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tank">Tank (Vertical Cylinder)</SelectItem>
+                    <SelectItem value="pipe">Pipe (Horizontal Cylinder)</SelectItem>
+                    <SelectItem value="elbow">Elbow (90° Curved)</SelectItem>
+                    <SelectItem value="vessel">Vessel (Domed Cylinder)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             {/* Upload Card */}
             <div
@@ -181,19 +216,29 @@ export default function ExcelUploadsPage() {
                     <div className="px-6 py-4 border-b border-border bg-muted/50">
                       <h3 className="font-bold text-foreground">{file.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Sheet: {file.sheetName} • {file.data?.length || 0} rows • {file.headers?.length || 0} columns
+                        Product: {selectedProductType.charAt(0).toUpperCase() + selectedProductType.slice(1)} • Sheet:{" "}
+                        {file.sheetName} • {file.data?.length || 0} rows • {file.headers?.length || 0} columns
                       </p>
                       {file.data && file.data.length > 20 && (
                         <p className="text-sm text-accent mt-2">Showing first 20 rows for preview</p>
                       )}
-                      {lastUploadedData?.id === file.id && (
-                        <Link
-                          href="/tank-viewer"
-                          className="inline-block mt-3 px-4 py-2 bg-primary hover:opacity-90 text-primary-foreground rounded-lg transition text-sm font-medium"
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => {
+                            handleViewInViewer(file)
+                            window.location.href = "/tank-viewer"
+                          }}
+                          className="px-4 py-2 bg-primary hover:opacity-90 text-primary-foreground rounded-lg transition text-sm font-medium"
                         >
-                          View in 3D Tank Viewer
-                        </Link>
-                      )}
+                          View in 3D Viewer
+                        </button>
+                        <button
+                          onClick={() => (window.location.href = "/historical-analysis")}
+                          className="px-4 py-2 bg-secondary hover:opacity-90 text-secondary-foreground rounded-lg transition text-sm font-medium"
+                        >
+                          View Analysis
+                        </button>
+                      </div>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">
