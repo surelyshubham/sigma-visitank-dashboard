@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import Link from "next/link"
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
 import { useState } from "react"
@@ -25,6 +25,7 @@ export default function ExcelUploadsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
+  const [lastUploadedData, setLastUploadedData] = useState<UploadedFile | null>(null)
 
   const handleFileSelect = async (files: FileList) => {
     const newFiles: UploadedFile[] = []
@@ -68,6 +69,7 @@ export default function ExcelUploadsPage() {
         newFile.headers = headers
         newFile.sheetName = firstSheetName
         newFile.timestamp = new Date()
+        setLastUploadedData(newFile)
       } catch (error) {
         newFile.status = "error"
         newFile.errorMessage = error instanceof Error ? error.message : "Failed to parse file"
@@ -183,6 +185,14 @@ export default function ExcelUploadsPage() {
                       </p>
                       {file.data && file.data.length > 20 && (
                         <p className="text-sm text-accent mt-2">Showing first 20 rows for preview</p>
+                      )}
+                      {lastUploadedData?.id === file.id && (
+                        <Link
+                          href="/tank-viewer"
+                          className="inline-block mt-3 px-4 py-2 bg-primary hover:opacity-90 text-primary-foreground rounded-lg transition text-sm font-medium"
+                        >
+                          View in 3D Tank Viewer
+                        </Link>
                       )}
                     </div>
                     <div className="overflow-x-auto">

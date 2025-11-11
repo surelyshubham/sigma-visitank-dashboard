@@ -25,8 +25,7 @@ export function Tank2DViewer({ showGrid, showCompass }: Tank2DViewerProps) {
     const centerY = canvas.height / 2
     const tankRadius = 200
 
-    // Draw background
-    ctx.fillStyle = "#f0f0f0"
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--background") || "#ffffff"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     // Draw grid if enabled

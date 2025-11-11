@@ -2,7 +2,7 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { Navbar } from "@/components/navbar"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Grid3X3, Compass, Eye, MapPin, Wind } from "lucide-react"
 import { Tank2DViewer } from "@/components/tank-2d-viewer"
 import { Tank3DViewer } from "@/components/tank-3d-viewer"
@@ -12,6 +12,18 @@ export default function TankViewerPage() {
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d")
   const [showGrid, setShowGrid] = useState(true)
   const [showCompass, setShowCompass] = useState(true)
+  const [tankData, setTankData] = useState<any>(null)
+
+  useEffect(() => {
+    const storedData = sessionStorage.getItem("uploadedTankData")
+    if (storedData) {
+      try {
+        setTankData(JSON.parse(storedData))
+      } catch (e) {
+        console.error("Failed to parse stored tank data")
+      }
+    }
+  }, [])
 
   return (
     <div className="flex h-screen bg-background">
@@ -74,7 +86,7 @@ export default function TankViewerPage() {
                   {viewMode === "2d" ? (
                     <Tank2DViewer showGrid={showGrid} showCompass={showCompass} />
                   ) : (
-                    <Tank3DViewer showGrid={showGrid} showCompass={showCompass} />
+                    <Tank3DViewer showGrid={showGrid} showCompass={showCompass} tankData={tankData} />
                   )}
                 </div>
               </div>
